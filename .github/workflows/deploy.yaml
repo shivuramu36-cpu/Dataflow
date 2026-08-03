@@ -57,7 +57,7 @@ jobs:
 
     - name: Build Dataflow Flex Template (Pipeline A)
       run: |
-        gcloud dataflow flex-template build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
+        gcloud dataflow flex-template build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-latest.json" \
           --image "${{ env.IMAGE_TAG_A }}" \
           --sdk-language "PYTHON" \
           --metadata-file "metadata.json"
@@ -65,6 +65,6 @@ jobs:
     - name: Run Dataflow Job (Pipeline A)
       run: |
         gcloud dataflow flex-template run "pipeline-${{ github.sha }}" \
-          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
+          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-latest.json" \
           --region "${{ env.REGION }}" \
           --parameters input="gs:/customers-shiva/customers-shiva.csv" # <-- Change to your CSV path
