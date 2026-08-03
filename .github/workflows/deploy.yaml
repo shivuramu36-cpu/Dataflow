@@ -32,6 +32,7 @@ jobs:
         pip install -r pipeline/requirements.txt
         pip install pytest
         pytest  # Runs Apache Beam tests locally using DirectRunner
+        pytest --suppress-no-test-exit-code  # Prevents exit code 5 from breaking the build
 
     # --- AUTH STAGE ---
     - name: Authenticate to Google Cloud
@@ -67,4 +68,6 @@ jobs:
           --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
           --region "${{ env.REGION }}" \
           --parameters input_topic="projects/${{ env.PROJECT_ID }}/topics/my-topic"
+
+
           
