@@ -67,4 +67,3 @@ jobs:
         gcloud dataflow flex-template run "pipeline-${{ github.sha }}" \
           --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
           --region "${{ env.REGION }}"
-=
