@@ -1,0 +1,12 @@
+{
+  "name": "My Dataflow Python Pipeline",
+  "description": "Triggered via GitHub Actions",
+  "parameters": [
+    {
+      "name": "input_topic",
+      "label": "Input Pub/Sub Topic",
+      "helpText": "Pub/Sub topic to read from",
+      "isOptional": false
+    }
+  ]
+}
