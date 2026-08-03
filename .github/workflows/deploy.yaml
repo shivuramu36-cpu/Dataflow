@@ -27,7 +27,7 @@ jobs:
       with:
         # Optional: Enable caching for faster future runs
         cache: 'pip'
-        cache-dependency-path: 'pipeline/requirements.txt'
+        cache-dependency-path: 'requirements.txt'
 
     - name: Install Dependencies & Run Unit Tests
       run: |
