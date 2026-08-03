@@ -50,43 +50,21 @@ jobs:
     # ==========================================
     - name: Build and Push Docker Image (Pipeline A)
       run: |
-        TAG_A="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-apps/pipeline-a:${{ github.sha }}"
-        docker build -f Dockerfile_a -t "$TAG_A" .
+        TAG_A="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-apps/pipeline:${{ github.sha }}"
+        docker build -f Dockerfile -t "$TAG_A" .
         docker push "$TAG_A"
         echo "IMAGE_TAG_A=$TAG_A" >> $GITHUB_ENV
 
     - name: Build Dataflow Flex Template (Pipeline A)
       run: |
-        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-a-${{ github.sha }}.json" \
+        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
           --image "${{ env.IMAGE_TAG_A }}" \
           --sdk-language "PYTHON" \
-          --metadata-file "metadata_a.json"
+          --metadata-file "metadata.json"
 
     - name: Run Dataflow Job (Pipeline A)
       run: |
-        gcloud dataflow flex-template run "pipeline-a-${{ github.sha }}" \
-          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-a-${{ github.sha }}.json" \
+        gcloud dataflow flex-template run "pipeline-${{ github.sha }}" \
+          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
           --region "${{ env.REGION }}"
-
-    # ==========================================
-    # 🚀 PIPELINE B: BUILD & DEPLOY
-    # ==========================================
-    - name: Build and Push Docker Image (Pipeline B)
-      run: |
-        TAG_B="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-apps/pipeline-b:${{ github.sha }}"
-        docker build -f Dockerfile_b -t "$TAG_B" .
-        docker push "$TAG_B"
-        echo "IMAGE_TAG_B=$TAG_B" >> $GITHUB_ENV
-
-    - name: Build Dataflow Flex Template (Pipeline B)
-      run: |
-        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-b-${{ github.sha }}.json" \
-          --image "${{ env.IMAGE_TAG_B }}" \
-          --sdk-language "PYTHON" \
-          --metadata-file "metadata_b.json"
-
-    - name: Run Dataflow Job (Pipeline B)
-      run: |
-        gcloud dataflow flex-template run "pipeline-b-${{ github.sha }}" \
-          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-b-${{ github.sha }}.json" \
-          --region "${{ env.REGION }}"
+=
