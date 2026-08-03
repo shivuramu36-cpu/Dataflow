@@ -34,7 +34,7 @@ jobs:
         # 1. Upgrade critical compilation tools first
         python -m pip install --upgrade pip setuptools wheel
 
-        # 2. Call the discovery script we made earlier to install your requirements
+        # 2. Call the discovery script to install your requirements
         if [ -f "pipeline/requirements.txt" ]; then
           echo "Found requirements inside pipeline/ folder"
           pip install -r pipeline/requirements.txt
@@ -43,9 +43,10 @@ jobs:
           pip install -r requirements.txt
         fi
 
-        # 3. Complete test harness installation and run
+        # 3. Install pytest and run it on the current working directory (.) instead of pipeline/
         pip install pytest
-        pytest pipeline/
+        pytest .  # <-- Changed from 'pipeline/' to '.'
+
 
 
 
