@@ -31,9 +31,8 @@ jobs:
       run: |
         pip install -r pipeline/requirements.txt
         pip install pytest
-        pytest  # Runs Apache Beam tests locally using DirectRunner
-        # Run pytest, intercept exit code 5 (no tests found), and force a successful 0 exit status
-        pytest pipeline/ || [[ $? -eq 5 ]]
+        pytest pipeline/
+
 
     # --- AUTH STAGE ---
     - name: Authenticate to Google Cloud
