@@ -64,18 +64,21 @@ jobs:
       run: |
         gcloud auth configure-docker ${{ env.REGISTRY }}
 
-     # --- DYNAMIC MATRIX BUILD STAGE ---
+         # --- DYNAMIC MATRIX BUILD STAGE ---
     - name: Build and Push Docker Image
       run: |
-        # Fixed path resolution string below:
+        # 1. Map out the full registry path name for this specific matrix job
         TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-apps/${{ matrix.pipeline.name }}:${{ github.sha }}"
         
-        # Build using the correct file parameter from the matrix
-        docker build -f ${{ matrix.pipeline.dockerfile }} -t $TAG .
-        docker push $TAG
+        # 2. Compile using the exact filename passed from the matrix strategy
+        docker build -f "${{ matrix.pipeline.dockerfile }}" -t "$TAG" .
         
-        # Save tag dynamically for the subsequent build steps
+        # 3. Push to your Google Cloud Artifact Registry
+        docker push "$TAG"
+        
+        # 4. Save the variable for subsequent Google Cloud staging commands
         echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+
 
     - name: Build Dataflow Flex Template
       run: |
