@@ -33,6 +33,7 @@ jobs:
         pip install pytest
         pytest pipeline/
 
+
     # --- AUTH STAGE ---
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
@@ -67,6 +68,4 @@ jobs:
           --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
           --region "${{ env.REGION }}" \
           --parameters input_topic="projects/${{ env.PROJECT_ID }}/topics/my-topic"
-
-
           
