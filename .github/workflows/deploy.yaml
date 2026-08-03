@@ -16,14 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.2.2  # Or look up the absolute latest v4 patch release
+
 
     # --- CI STAGE ---
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v5.4.0  # Or look up the absolute latest v5 patch release
       with:
-        python-state-file: 'pipeline/requirements.txt'
-        python-version: '3.11'
+        # Optional: Enable caching for faster future runs
+        cache: 'pip'
+        cache-dependency-path: 'pipeline/requirements.txt'
 
     - name: Install Dependencies & Run Unit Tests
       run: |
