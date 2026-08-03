@@ -17,7 +17,7 @@ class Extraction(beam.DoFn):  # Best practice: Capitalize class names
         except (IndexError, ValueError) as e:
             # Prevents the entire pipeline from crashing on a bad data row
             print(f"Skipping malformed row: {element}. Error: {e}")
-
+# main function
 def run():
     parse = argparse.ArgumentParser()
     parse.add_argument("--input", required=True, help="GCP input file")
