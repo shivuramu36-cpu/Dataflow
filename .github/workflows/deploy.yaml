@@ -57,7 +57,7 @@ jobs:
 
     - name: Build Dataflow Flex Template (Pipeline A)
       run: |
-        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
+        gcloud dataflow flex-template build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
           --image "${{ env.IMAGE_TAG_A }}" \
           --sdk-language "PYTHON" \
           --metadata-file "metadata.json"
