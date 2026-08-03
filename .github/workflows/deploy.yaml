@@ -13,11 +13,14 @@ env:
 jobs:
   ci-cd:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Define the exact names, files, and metadata templates here
+        pipeline: [
+          { name: "pipeline", dockerfile: "Docker", metadata: "metadata.json" }
+        ]
+
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4.2.2  # Or look up the absolute latest v4 patch release
-
-
     # --- CI STAGE ---
     - name: Set up Python
       uses: actions/setup-python@v5.4.0  # Or look up the absolute latest v5 patch release
@@ -46,21 +49,28 @@ jobs:
       run: |
         gcloud auth configure-docker ${{ env.REGISTRY }}
 
-       # --- DYNAMIC MATRIX BUILD STAGE ---
+     # --- DYNAMIC MATRIX BUILD STAGE ---
     - name: Build and Push Docker Image
       run: |
-        # Changed 'dataflow-repo' to 'dataflow-apps' in the string mapping below:
+        # Fixed path resolution string below:
         TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-apps/${{ matrix.pipeline.name }}:${{ github.sha }}"
         
+        # Build using the correct file parameter from the matrix
         docker build -f ${{ matrix.pipeline.dockerfile }} -t $TAG .
         docker push $TAG
+        
+        # Save tag dynamically for the subsequent build steps
         echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
-
-    - name: Run/Update Dataflow Job
+    - name: Build Dataflow Flex Template
       run: |
-        gcloud dataflow flex-template run "dataflow-job-${{ github.sha }}" \
-          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
-          --region "${{ env.REGION }}" \
-          --parameters input_topic="projects/${{ env.PROJECT_ID }}/topics/my-topic"
-          
+        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/${{ matrix.pipeline.name }}-${{ github.sha }}.json" \
+          --image "${{ env.IMAGE_TAG }}" \
+          --sdk-language "PYTHON" \
+          --metadata-file "${{ matrix.pipeline.metadata }}"
+
+    - name: Run Dataflow Job
+      run: |
+        gcloud dataflow flex-template run "${{ matrix.pipeline.name }}-${{ github.sha }}" \
+          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/${{ matrix.pipeline.name }}-${{ github.sha }}.json" \
+          --region "${{ env.REGION }}"
