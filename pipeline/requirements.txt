@@ -1,0 +1,7 @@
+# Core Apache Beam and GCP dependencies
+apache-beam[gcp]==2.63.0
+
+# Common pipeline dependencies (add or remove based on your needs)
+pandas>=2.0.0
+google-cloud-pubsub>=2.18.0
+google-cloud-storage>=2.10.0
