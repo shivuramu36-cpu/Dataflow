@@ -55,12 +55,15 @@ jobs:
         docker push $TAG
         echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
-    - name: Build and Deploy Dataflow Flex Template
+        # --- DYNAMIC MATRIX BUILD STAGE ---
+    - name: Build and Push Docker Image
       run: |
-        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
-          --image "${{ env.IMAGE_TAG }}" \
-          --sdk-language "PYTHON" \
-          --metadata-file "metadata.json"
+        TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-repo/${{ matrix.pipeline.name }}:${{ github.sha }}"
+        # Added the -f flag below to dynamically point to Dockerfile_a or Dockerfile_b
+        docker build -f ${{ matrix.pipeline.dockerfile }} -t $TAG .
+        docker push $TAG
+        echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+
 
     - name: Run/Update Dataflow Job
       run: |
