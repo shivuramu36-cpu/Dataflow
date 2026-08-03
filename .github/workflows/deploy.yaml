@@ -11,47 +11,29 @@ env:
   BUCKET_NAME: "dataflow_shiva_test"
 
 jobs:
-  ci-cd:
+  deploy-pipelines:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # Define the exact names, files, and metadata templates here
-        pipeline: [
-          { name: "pipeline", dockerfile: "Docker", metadata: "metadata.json" }
-        ]
-
     steps:
-    # --- CI STAGE ---
+    - name: Checkout Code
+      uses: actions/checkout@v4.2.2
+
     - name: Set up Python
-      uses: actions/setup-python@v5.4.0  # Or look up the absolute latest v5 patch release
+      uses: actions/setup-python@v5.4.0
       with:
-        # Optional: Enable caching for faster future runs
-        cache: 'pip'
-        cache-dependency-path: 'requirements.txt'
+        python-version: '3.11'
 
     - name: Install Dependencies & Run Unit Tests
       run: |
-        # 1. Upgrade critical compilation tools
         python -m pip install --upgrade pip setuptools wheel
-
-        # 2. Call the discovery script to install your requirements
         if [ -f "pipeline/requirements.txt" ]; then
-          echo "Found requirements inside pipeline/ folder"
           pip install -r pipeline/requirements.txt
         elif [ -f "requirements.txt" ]; then
-          echo "Found requirements inside root folder"
           pip install -r requirements.txt
         fi
-
-        # 3. Create a test file dynamically so pytest always finds one
         echo "def test_placeholder(): assert True" > test_workflow_generated.py
-
-        # 4. Install pytest and run it
         pip install pytest
-        pytest test_workflow_generated.py  # <-- Explicitly target the generated file
+        pytest test_workflow_generated.py
 
-
-    # --- AUTH STAGE ---
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
@@ -60,35 +42,51 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
-    - name: Configure Docker for Artifact Registry
-      run: |
-        gcloud auth configure-docker ${{ env.REGISTRY }}
+    - name: Configure Docker
+      run: gcloud auth configure-docker ${{ env.REGISTRY }}
 
-         # --- DYNAMIC MATRIX BUILD STAGE ---
-    - name: Build and Push Docker Image
+    # ==========================================
+    # 🚀 PIPELINE A: BUILD & DEPLOY
+    # ==========================================
+    - name: Build and Push Docker Image (Pipeline A)
       run: |
-        # 1. Map out the full registry path name for this specific matrix job
-        TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-apps/${{ matrix.pipeline.name }}:${{ github.sha }}"
-        
-        # 2. Compile using the exact filename passed from the matrix strategy
-        docker build -f "${{ matrix.pipeline.dockerfile }}" -t "$TAG" .
-        
-        # 3. Push to your Google Cloud Artifact Registry
-        docker push "$TAG"
-        
-        # 4. Save the variable for subsequent Google Cloud staging commands
-        echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+        TAG_A="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-apps/pipeline-a:${{ github.sha }}"
+        docker build -f Dockerfile_a -t "$TAG_A" .
+        docker push "$TAG_A"
+        echo "IMAGE_TAG_A=$TAG_A" >> $GITHUB_ENV
 
-
-    - name: Build Dataflow Flex Template
+    - name: Build Dataflow Flex Template (Pipeline A)
       run: |
-        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/${{ matrix.pipeline.name }}-${{ github.sha }}.json" \
-          --image "${{ env.IMAGE_TAG }}" \
+        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-a-${{ github.sha }}.json" \
+          --image "${{ env.IMAGE_TAG_A }}" \
           --sdk-language "PYTHON" \
-          --metadata-file "${{ matrix.pipeline.metadata }}"
+          --metadata-file "metadata_a.json"
 
-    - name: Run Dataflow Job
+    - name: Run Dataflow Job (Pipeline A)
       run: |
-        gcloud dataflow flex-template run "${{ matrix.pipeline.name }}-${{ github.sha }}" \
-          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/${{ matrix.pipeline.name }}-${{ github.sha }}.json" \
+        gcloud dataflow flex-template run "pipeline-a-${{ github.sha }}" \
+          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-a-${{ github.sha }}.json" \
+          --region "${{ env.REGION }}"
+
+    # ==========================================
+    # 🚀 PIPELINE B: BUILD & DEPLOY
+    # ==========================================
+    - name: Build and Push Docker Image (Pipeline B)
+      run: |
+        TAG_B="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-apps/pipeline-b:${{ github.sha }}"
+        docker build -f Dockerfile_b -t "$TAG_B" .
+        docker push "$TAG_B"
+        echo "IMAGE_TAG_B=$TAG_B" >> $GITHUB_ENV
+
+    - name: Build Dataflow Flex Template (Pipeline B)
+      run: |
+        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-b-${{ github.sha }}.json" \
+          --image "${{ env.IMAGE_TAG_B }}" \
+          --sdk-language "PYTHON" \
+          --metadata-file "metadata_b.json"
+
+    - name: Run Dataflow Job (Pipeline B)
+      run: |
+        gcloud dataflow flex-template run "pipeline-b-${{ github.sha }}" \
+          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-b-${{ github.sha }}.json" \
           --region "${{ env.REGION }}"
