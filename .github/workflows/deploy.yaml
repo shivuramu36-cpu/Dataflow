@@ -31,6 +31,7 @@ jobs:
       run: |
         pip install -r pipeline/requirements.txt
         pip install pytest
+        pytest pipeline/
 
     # --- AUTH STAGE ---
     - name: Authenticate to Google Cloud
