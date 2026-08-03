@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main ]
 
+
 env:
   PROJECT_ID: "my-project123-503415"
   REGION: "asia-south1"
