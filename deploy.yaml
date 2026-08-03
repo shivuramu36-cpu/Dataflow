@@ -1,0 +1,67 @@
+name: Dataflow CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  PROJECT_ID: "my-project123-503415"
+  REGION: "asia-south1"
+  IMAGE_NAME: "dataflow-apps"
+  REGISTRY: "asia-south1-docker.pkg.dev"
+  BUCKET_NAME: "dataflow_shiva_test"
+
+jobs:
+  ci-cd:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # --- CI STAGE ---
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-state-file: 'pipeline/requirements.txt'
+        python-version: '3.11'
+
+    - name: Install Dependencies & Run Unit Tests
+      run: |
+        pip install -r pipeline/requirements.txt
+        pip install pytest
+        pytest  # Runs Apache Beam tests locally using DirectRunner
+
+    # --- AUTH STAGE ---
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets::GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker for Artifact Registry
+      run: |
+        gcloud auth configure-docker ${{ env.REGISTRY }}
+
+    # --- BUILD & CD STAGE ---
+    - name: Build and Push Docker Image
+      run: |
+        TAG="${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/dataflow-repo/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        docker build -t $TAG .
+        docker push $TAG
+        echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+
+    - name: Build and Deploy Dataflow Flex Template
+      run: |
+        gcloud dataflow templates build "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
+          --image "${{ env.IMAGE_TAG }}" \
+          --sdk-language "PYTHON" \
+          --metadata-file "metadata.json"
+
+    - name: Run/Update Dataflow Job
+      run: |
+        gcloud dataflow flex-template run "dataflow-job-${{ github.sha }}" \
+          --template-file-gcs-location "gs://${{ env.BUCKET_NAME }}/templates/pipeline-${{ github.sha }}.json" \
+          --region "${{ env.REGION }}" \
+          --parameters input_topic="projects/${{ env.PROJECT_ID }}/topics/my-topic"
