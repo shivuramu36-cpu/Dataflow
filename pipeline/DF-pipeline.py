@@ -3,6 +3,7 @@ import argparse
 from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions
 from apache_beam.transforms.combiners import CountCombineFn
 
+# Class definition
 class Extraction(beam.DoFn):  # Best practice: Capitalize class names
     def process(self, element, *args, **kwargs):
         # FIX 1: ReadFromText reads raw text strings. Split the string by comma first.
